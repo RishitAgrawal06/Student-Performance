@@ -1,0 +1,125 @@
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+import seaborn as sns
+import numpy as np
+
+# create a function that takes in the location of a csv and returns the pandas dataframe with the score sum and score avg columns
+def create_df(file_path):
+    students_df = pd.read_csv(file_path)
+    students_df.head()
+    students_df['score sum'] = students_df['math score'] + students_df['reading score'] + students_df['writing score']
+    students_df['score average'] = (students_df['math score'] + students_df['reading score'] + students_df['writing score'])/3
+    return students_df
+
+def graph_scatter(students_df):
+    sns.scatterplot(data = students.df, x = students_df['writing score'], y= students_df['math score'], hue ='day')
+    plt.scatter(students_df['writing score'], students_df['math score'], color='blue', label='Math Score')
+    plt.scatter(students_df['writing score'], students_df['reading score'], color='green', label='Reading Score')
+    m, c = np.polyfit(students_df['writing score'], students_df['reading score'], 1)
+    plt.plot(students_df['writing score'], m*students_df['writing score']+c, color='red', label='Reading LOBF')
+    a, b = np.polyfit(students_df['math score'], students_df['reading score'], 1)
+    plt.plot(students_df['writing score'], a*students_df['writing score']+b, color='black', label='Math LOBF')
+    plt.legend()
+    plt.xlabel("Writing Score")
+    plt.ylabel("Score")
+    plt.show()
+    
+def concat_scatter_scores(students_df):
+    math_scores = students_df['math score'].tolist()
+    reading_scores = students_df['reading score'].tolist()
+    writing_scores = students_df['writing score'].tolist()
+
+    full_writing_scores = writing_scores + writing_scores
+    full_scores = reading_scores + math_scores
+
+    score_type = []
+    for i in range(len(writing_scores)):
+        score_type.append('reading')
+    for i in range(len(writing_scores)):
+        score_type.append('math')
+
+    scores_dict = {'score type': score_type,'all scores': full_scores, "writing scores": full_writing_scores}
+    scores = pd.DataFrame.from_dict(scores_dict)
+    
+    fig = Figure()
+    ax = fig.subplots()
+    sns.scatterplot(data=scores, x="writing scores", y='all scores', hue='score type', ax=ax)
+    
+    return fig
+
+def sns_scatter(students_df):
+    fig = Figure()
+    ax = fig.subplots()
+    sns.scatterplot(data = students_df, x = students_df['writing score'], y=students_df['math score'],ax=ax)
+    return fig
+
+# create a function that displays the bar graph of parents' college background and their students' scores
+def create_college_bars(students_df):
+    students_df['score sum'] = students_df['math score'] + students_df['reading score'] + students_df['writing score']
+    students_df['score average'] = (students_df['math score'] + students_df['reading score'] + students_df['writing score'])/3
+    stu_gr = students_df.groupby(['parental level of education'])['score average'].mean().reset_index()
+    stugr_sorted = stu_gr.sort_values('score average')
+
+    plt.bar(stugr_sorted['parental level of education'], stugr_sorted['score average'],color='orange')
+    plt.xlabel("Parental Level of Education", size = 20 )
+    plt.ylabel("Score Average", size = 20 )
+    plt.title("Parents College Background Vs Test Scores", size = 20)
+
+    plt.show()
+    
+def sns_barplot(students_df):
+    fig = Figure()
+    ax = fig.subplots()
+    stu_gr = students_df.groupby(['parental level of education'])['score average'].mean().reset_index()
+    stugr_sorted = stu_gr.sort_values('score average')
+    sns.barplot(data = stugr_sorted, x = stugr_sorted['parental level of education'], y=stugr_sorted['score average'], ax=ax)
+    ax.set_xlabel("Parental Level of Education")
+    ax.set_ylabel("Score Average")
+    ax.set_title("Parents College Background VS. Test Scores")
+    ax.set_ylim(0,100)
+    return fig
+
+def plotly_barplot(students_df):
+    stu_gr = students_df.groupby(['parental level of education'])['score average'].mean().reset_index()
+    stugr_sorted = stu_gr.sort_values('score average')
+#     df = px.stugr_sorted.gapminder()
+    df = stugr_sorted
+    fig = px.bar(df, x='parental level of education', y='score average')
+    return fig
+
+# create a function that displays a bar graph between test preparation and students' scores
+def scoreprep_bars(students_df):
+    students_df['score average'] = (students_df['math score'] + students_df['reading score'] + students_df['writing score'])/3
+    preparation_df = students_df[students_df['test preparation course']=="none"]
+    preparation1_df = students_df[students_df['test preparation course']=="completed"]
+    X = ['none', 'completed']
+    Ymale = [63.044372, 70.781609]
+    Zfemale = [66.878244, 74.454710]
+    X_axis = np.arange(len(X))
+    plt.bar(X_axis - 0.2, Ymale, 0.4, label = 'male', color='paleturquoise')
+    plt.bar(X_axis + 0.2, Zfemale, 0.4, label = 'female', color='darksalmon')
+    plt.xticks(X_axis, X)
+    plt.xlabel("Test Preparation Course")
+    plt.ylabel("Score Average")
+    plt.title("Test Preparation vs Score Average", size = 20)
+    plt.legend()
+    plt.show()
+
+def sns_barplot2(students_df):
+    fig = Figure()
+    ax = fig.subplots()
+    sns.barplot(data = students_df , x = 'test preparation course', y = 'score average', hue = 'gender', ci = None, palette = "coolwarm_r", ax=ax)
+    return fig
+    
+students_df = create_df('data/StudentsPerformance.csv')
+
+# create streamlit app
+st.title('Students Performance Analysis')
+st.subheader('Math v. Writing Scores')
+st.pyplot(concat_scatter_scores(students_df))
+st.subheader("Parental Level of Education & Test Scores Average")
+st.pyplot(sns_barplot(students_df))
+st.subheader("Test Preparation v. Test Scores Average")
+st.pyplot(sns_barplot2(students_df))
